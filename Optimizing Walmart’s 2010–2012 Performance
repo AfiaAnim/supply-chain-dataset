@@ -1,0 +1,102 @@
+# Read the desired file (e.g., CSV inside the ZIP)
+data <- read.csv("C:\\Users\\aphya\\OneDrive\\Desktop\\Walmart_Sales.csv")
+
+
+  
+  
+## Load the libraries
+library(MLmetrics)
+library(ranger)
+library(vtreat)
+library(ggplot2)
+library(ggthemes)
+library(caret)
+
+# EDA
+names(data)
+head(data)
+summary(data)
+
+
+# Aggregate total weekly sales by Holiday_Flag
+sales_by_holiday <- aggregate(Weekly_Sales ~ Holiday_Flag, data = data, sum)
+
+# Convert Holiday_Flag to labels
+sales_by_holiday$Holiday_Flag <- factor(sales_by_holiday$Holiday_Flag,
+                                        levels = c(0, 1),
+                                        labels = c("Non-Holiday", "Holiday"))
+
+# Create the pie chart
+pie(sales_by_holiday$Weekly_Sales,
+    labels = paste(sales_by_holiday$Holiday_Flag, 
+                   round(100 * sales_by_holiday$Weekly_Sales / sum(sales_by_holiday$Weekly_Sales), 1), "%"),
+    main = "Weekly Sales Distribution by Holiday Flag",
+    col = c("skyblue", "salmon"))
+
+
+
+
+# 2. Sum total weekly sales by store
+sales_by_store <- aggregate(Weekly_Sales ~ Store, data = data, sum)
+
+# 3. Identify the store with the highest total sales
+top_store <- sales_by_store$Store[which.max(sales_by_store$Weekly_Sales)]
+cat("Store with highest total sales is:", top_store, "\n")
+
+# 4. Subset the data for that store
+top_data <- subset(data, Store == top_store)
+
+# 5. Make a bar chart of its weekly sales over time
+#    (assuming you have a Date column; if not, you can use the row number or Week index)
+barplot(
+  top_data$Weekly_Sales,
+  names.arg = as.character(top_data$Date),
+  las = 2,              # rotate x-axis labels for readability
+  cex.names = 0.7,      # shrink label size if needed
+  main = paste("Weekly Sales for Store", top_store),
+  ylab = "Weekly Sales",
+  xlab = "Date"
+)
+
+library(ggplot2)
+
+# Sum and order
+sales_by_store <- aggregate(Weekly_Sales ~ Store, data = data, sum)
+sales_by_store <- sales_by_store[order(-sales_by_store$Weekly_Sales), ]
+
+# Plot all stores
+ggplot(sales_by_store, aes(x = reorder(factor(Store), -Weekly_Sales), y = Weekly_Sales)) +
+  geom_col() +
+  labs(
+    title = "Total Weekly Sales by Store",
+    x = "Store",
+    y = "Total Weekly Sales"
+  ) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+
+
+# 2. Make sure Date is Date class
+data$Date <- as.Date(data$Date, format = "%d-%m-%Y")
+
+# 3. Extract Year
+data$Year <- format(data$Date, "%Y")
+
+# 4. Compute average fuel price per year
+yearly_fp <- aggregate(Fuel_Price ~ Year, data = data, FUN = mean)
+
+# 5. Barplot
+barplot(
+  yearly_fp$Fuel_Price,
+  names.arg      = yearly_fp$Year,
+  las            = 2,                          # rotate x-axis labels
+  cex.names      = 0.8,                        # shrink label size if needed
+  main           = "Average Yearly Fuel Price",
+  xlab           = "Year",
+  ylab           = "Fuel Price (USD)",
+  ylim           = c(0, max(yearly_fp$Fuel_Price) * 1.1)
+)
+
+
+
